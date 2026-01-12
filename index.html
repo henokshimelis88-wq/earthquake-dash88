@@ -1,65 +1,59 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Earthquake Alert Login</title>
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js"></script>
+  <meta charset="UTF-8">
+  <title>Earthquake Login</title>
 </head>
-
 <body>
-  <h2>Earthquake Alert System</h2>
 
-  <input type="email" id="email" placeholder="Email"><br><br>
-  <input type="password" id="password" placeholder="Password"><br><br>
+<h2>Login / Register</h2>
 
-  <button onclick="register()">Register</button>
-  <button onclick="login()">Login</button>
+<input type="email" id="email" placeholder="Email"><br><br>
+<input type="password" id="password" placeholder="Password"><br><br>
 
-  <p id="msg"></p>
+<button id="registerBtn">Register</button>
+<button id="loginBtn">Login</button>
+
+<p id="msg"></p>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-  import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from
+    "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+  import { getDatabase, ref, set } from
+    "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
   const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    databaseURL: "https://YOUR_PROJECT.firebaseio.com",
-    projectId: "YOUR_PROJECT_ID",
+apiKey: "AIzaSyCSwmGxiQFQhnqBw_Lu5k7zFbT-gTmRU0s",
+authDomain: "earthquake-81adc.firebaseapp.com",
+databaseURL: "https://earthquake-81adc-default-rtdb.firebaseio.com",
+projectId: "earthquake-81adc",
+storageBucket: "earthquake-81adc.appspot.com",
+messagingSenderId: "514872783638",
+appId: "1:514872783638:android:84bba1e174eef86d391637"
   };
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getDatabase(app);
 
-  window.register = function() {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+  document.getElementById("registerBtn").onclick = () => {
+    const email = emailInput.value;
+    const password = passwordInput.value;
 
     createUserWithEmailAndPassword(auth, email, password)
       .then(user => {
-        set(ref(db, "users/" + user.user.uid), {
-          email: email
-        });
-        document.getElementById("msg").innerText = "Registered successfully!";
+        set(ref(db, "users/" + user.user.uid), { email });
+        msg.innerText = "Registered successfully";
       })
       .catch(err => alert(err.message));
-  }
+  };
 
-  window.login = function() {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-
-    signInWithEmailAndPassword(auth, email, password)
-      .then(() => {
-        window.location.href = "dashboard.html";
-      })
+  document.getElementById("loginBtn").onclick = () => {
+    signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value)
+      .then(() => window.location.href = "dashboard.html")
       .catch(err => alert(err.message));
-  }
+  };
 </script>
 
 </body>
