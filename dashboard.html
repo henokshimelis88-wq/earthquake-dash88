@@ -1,0 +1,160 @@
+<script type="module">
+  import { getAuth, onAuthStateChanged } from
+  "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+  const auth = getAuth();
+  onAuthStateChanged(auth, user => {
+    if (!user) {
+      window.location.href = "index.html";
+    }
+  });
+</script>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Earthquake Dashboard</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body { margin:0; font-family:Segoe UI, sans-serif; text-align:center; background:#f0f2f5;}
+.top-header {background:linear-gradient(135deg,#1f3c88,#4b6cb7); color:white; padding:30px 10px;}
+.status-card, .cards, .charts { margin:20px auto;}
+.chart-box {background:white; padding:20px; border-radius:12px; box-shadow:0 6px 15px rgba(0,0,0,0.15); height:350px;}
+.chart-container {position:relative; height:300px; width:100%;}
+.data-card {background:white; width:200px; padding:25px 20px; border-radius:12px; box-shadow:0 6px 15px rgba(0,0,0,0.15); margin:10px; display:inline-block;}
+#alertText {display:inline-block; padding:12px 25px; border-radius:30px; font-size:22px; background:#ddd; transition:0.3s;}
+.alert-active {animation: earthquakeAlert 0.5s ease-in-out infinite;}
+@keyframes earthquakeAlert {0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+#connectionStatus {position:fixed;top:10px;right:10px;padding:8px 15px;border-radius:20px;font-weight:bold; background:#4CAF50;color:white;}
+</style>
+</head>
+<body>
+
+<div id="connectionStatus">● Connecting...</div>
+
+<header class="top-header">
+<h1>🌍 Real-time Earthquake Monitoring</h1>
+</header>
+
+<div class="status-card">
+<div id="alertText">STATUS: CONNECTING...</div>
+</div>
+
+<div class="cards">
+<div class="data-card"><h3>Magnitude</h3><p id="mag">0.00</p></div>
+<div class="data-card"><h3>X-Axis</h3><p id="xval">0.00</p></div>
+<div class="data-card"><h3>Y-Axis</h3><p id="yval">0.00</p></div>
+<div class="data-card"><h3>Last Update</h3><p id="timestamp">--:--:--</p></div>
+</div>
+
+<div class="charts">
+<div class="chart-box"><h3>Magnitude Over Time</h3><div class="chart-container"><canvas id="magnitudeChart"></canvas></div></div>
+<div class="chart-box"><h3>Axis Motion</h3><div class="chart-container"><canvas id="motionChart"></canvas></div></div>
+<div class="chart-box"><h3>Seismic Activity</h3><div class="chart-container"><canvas id="activityChart"></canvas></div></div>
+</div>
+
+<script>
+const firebaseConfig = {
+apiKey: "AIzaSyCSwmGxiQFQhnqBw_Lu5k7zFbT-gTmRU0s",
+authDomain: "earthquake-81adc.firebaseapp.com",
+databaseURL: "https://earthquake-81adc-default-rtdb.firebaseio.com",
+projectId: "earthquake-81adc",
+storageBucket: "earthquake-81adc.appspot.com",
+messagingSenderId: "514872783638",
+appId: "1:514872783638:android:84bba1e174eef86d391637"
+};
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+
+let magnitudeChart, motionChart, activityChart;
+let dataBuffer = [];
+const MAX_DATA_POINTS = 100;
+
+function initializeCharts(){
+  magnitudeChart = new Chart(document.getElementById('magnitudeChart').getContext('2d'), {
+    type:'line', data:{labels:[], datasets:[{label:'Magnitude', data:[], borderColor:'#d62020', fill:true, backgroundColor:'rgba(214,32,32,0.1)', tension:0.4}]},
+    options:{responsive:true, maintainAspectRatio:false}
+  });
+  motionChart = new Chart(document.getElementById('motionChart').getContext('2d'), {
+    type:'line', data:{labels:[], datasets:[
+      {label:'X-Axis', data:[], borderColor:'#2366be', fill:true, backgroundColor:'rgba(35,102,190,0.1)', tension:0.4},
+      {label:'Y-Axis', data:[], borderColor:'#23be69', fill:true, backgroundColor:'rgba(35,190,105,0.1)', tension:0.4}
+    ]}, options:{responsive:true, maintainAspectRatio:false}
+  });
+  activityChart = new Chart(document.getElementById('activityChart').getContext('2d'), {
+    type:'scatter', data:{datasets:[{label:'Seismic Activity', data:[], backgroundColor:'rgba(255,99,132,0.6)', borderColor:'rgba(255,99,132,1)', pointRadius:5}]},
+    options:{responsive:true, maintainAspectRatio:false}
+  });
+}
+
+function formatTimeAgo(timestamp){
+  const s = Math.floor((Date.now() - timestamp)/1000);
+  if(s<60) return "Just now";
+  if(s<3600) return `${Math.floor(s/60)} mins ago`;
+  if(s<86400) return `${Math.floor(s/3600)} hours ago`;
+  return `${Math.floor(s/86400)} days ago`;
+}
+
+function startFirebaseListener(){
+  const dataRef = database.ref('earthquake_data');
+  dataRef.on('child_added', snapshot=>{
+    const data = snapshot.val();
+    if(!data || data.magnitude===undefined) return;
+    const magnitude = parseFloat(data.magnitude);
+    const xAxis = parseFloat(data.xAxis)||0;
+    const yAxis = parseFloat(data.yAxis)||0;
+    const timestamp = data.timestamp||Date.now();
+
+    document.getElementById("mag").innerText = magnitude.toFixed(2);
+    document.getElementById("xval").innerText = xAxis.toFixed(2);
+    document.getElementById("yval").innerText = yAxis.toFixed(2);
+    document.getElementById("timestamp").innerText = new Date(timestamp).toLocaleTimeString();
+    const alertText = document.getElementById("alertText");
+    if(magnitude>0.3){
+      alertText.innerHTML = "⚠️ EARTHQUAKE DETECTED!";
+      alertText.style.background = "linear-gradient(135deg, #ff416c, #ff4b2b)";
+      alertText.classList.add('alert-active');
+    } else {
+      alertText.innerHTML = "✅ STATUS: SAFE";
+      alertText.style.background = "linear-gradient(135deg, #00b09b, #96c93d)";
+      alertText.classList.remove('alert-active');
+    }
+
+    dataBuffer.push({timestamp, magnitude, xAxis, yAxis});
+    if(dataBuffer.length>MAX_DATA_POINTS) dataBuffer.shift();
+
+    const labels = dataBuffer.map(d=>new Date(d.timestamp).toLocaleTimeString());
+    magnitudeChart.data.labels = labels;
+    magnitudeChart.data.datasets[0].data = dataBuffer.map(d=>d.magnitude);
+    magnitudeChart.update();
+
+    motionChart.data.labels = labels;
+    motionChart.data.datasets[0].data = dataBuffer.map(d=>d.xAxis);
+    motionChart.data.datasets[1].data = dataBuffer.map(d=>d.yAxis);
+    motionChart.update();
+
+    activityChart.data.datasets[0].data = dataBuffer.map(d=>({x:d.xAxis,y:d.yAxis}));
+    activityChart.update();
+
+    document.getElementById('connectionStatus').textContent = '● Live Data';
+  });
+
+  const connectedRef = database.ref(".info/connected");
+  connectedRef.on("value",snap=>{
+    if(snap.val()===true){
+      document.getElementById('connectionStatus').style.background='#4CAF50';
+    } else document.getElementById('connectionStatus').style.background='#ff9800';
+  });
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  initializeCharts();
+  startFirebaseListener();
+});
+</script>
+</body>
+</html>
