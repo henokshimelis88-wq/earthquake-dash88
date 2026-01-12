@@ -1,27 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Earthquake Login</title>
-</head>
-<body>
-
-<h2>Login / Register</h2>
-
-<input type="email" id="email" placeholder="Email"><br><br>
-<input type="password" id="password" placeholder="Password"><br><br>
-
-<button id="registerBtn">Register</button>
-<button id="loginBtn">Login</button>
-
-<p id="msg"></p>
-
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword }
-    from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-  import { getDatabase, ref, set }
-    from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from
+    "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+  import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCSwmGxiQFQhnqBw_Lu5k7zFbT-gTmRU0s",
@@ -41,7 +22,23 @@
   const passwordInput = document.getElementById("password");
   const msg = document.getElementById("msg");
 
+  function validateInput() {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+    if (!email || !password) {
+      alert("⚠ Email and password cannot be empty!");
+      return false;
+    }
+    if (password.length < 6) {
+      alert("⚠ Password must be at least 6 characters!");
+      return false;
+    }
+    return true;
+  }
+
   document.getElementById("registerBtn").onclick = () => {
+    if (!validateInput()) return;
+
     createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value)
       .then(user => {
         set(ref(db, "users/" + user.user.uid), {
@@ -49,17 +46,32 @@
         });
         msg.innerText = "✅ Registered successfully";
       })
-      .catch(err => alert(err.message));
+      .catch(err => {
+        if (err.code === 'auth/email-already-in-use') {
+          alert("⚠ This email is already registered. Try logging in instead.");
+        } else if (err.code === 'auth/invalid-email') {
+          alert("⚠ Invalid email format!");
+        } else {
+          alert(err.message);
+        }
+      });
   };
 
   document.getElementById("loginBtn").onclick = () => {
+    if (!validateInput()) return;
+
     signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value)
       .then(() => {
         window.location.href = "dashboard.html";
       })
-      .catch(err => alert(err.message));
+      .catch(err => {
+        if (err.code === 'auth/user-not-found') {
+          alert("⚠ User not found. Please register first.");
+        } else if (err.code === 'auth/wrong-password') {
+          alert("⚠ Wrong password. Try again.");
+        } else {
+          alert(err.message);
+        }
+      });
   };
 </script>
-
-</body>
-</html>
