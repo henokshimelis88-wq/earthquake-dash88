@@ -18,40 +18,45 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from
-    "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-  import { getDatabase, ref, set } from
-    "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword }
+    from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+  import { getDatabase, ref, set }
+    from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
   const firebaseConfig = {
-apiKey: "AIzaSyCSwmGxiQFQhnqBw_Lu5k7zFbT-gTmRU0s",
-authDomain: "earthquake-81adc.firebaseapp.com",
-databaseURL: "https://earthquake-81adc-default-rtdb.firebaseio.com",
-projectId: "earthquake-81adc",
-storageBucket: "earthquake-81adc.appspot.com",
-messagingSenderId: "514872783638",
-appId: "1:514872783638:android:84bba1e174eef86d391637"
+    apiKey: "AIzaSyCSwmGxiQFQhnqBw_Lu5k7zFbT-gTmRU0s",
+    authDomain: "earthquake-81adc.firebaseapp.com",
+    databaseURL: "https://earthquake-81adc-default-rtdb.firebaseio.com",
+    projectId: "earthquake-81adc",
+    storageBucket: "earthquake-81adc.appspot.com",
+    messagingSenderId: "514872783638",
+    appId: "1:514872783638:web:FIXME"
   };
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getDatabase(app);
 
-  document.getElementById("registerBtn").onclick = () => {
-    const email = emailInput.value;
-    const password = passwordInput.value;
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+  const msg = document.getElementById("msg");
 
-    createUserWithEmailAndPassword(auth, email, password)
+  document.getElementById("registerBtn").onclick = () => {
+    createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value)
       .then(user => {
-        set(ref(db, "users/" + user.user.uid), { email });
-        msg.innerText = "Registered successfully";
+        set(ref(db, "users/" + user.user.uid), {
+          email: emailInput.value
+        });
+        msg.innerText = "✅ Registered successfully";
       })
       .catch(err => alert(err.message));
   };
 
   document.getElementById("loginBtn").onclick = () => {
     signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value)
-      .then(() => window.location.href = "dashboard.html")
+      .then(() => {
+        window.location.href = "dashboard.html";
+      })
       .catch(err => alert(err.message));
   };
 </script>
