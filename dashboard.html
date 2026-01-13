@@ -112,7 +112,7 @@ function startFirebaseListener(){
     document.getElementById("mag").innerText = magnitude.toFixed(2);
     document.getElementById("xval").innerText = xAxis.toFixed(2);
     document.getElementById("yval").innerText = yAxis.toFixed(2);
-    document.getElementById("timestamp").innerText = new Date(timestamp).toLocaleTimeString();
+    document.getElementById("timestamp").innerText = new Date(Date.now()).toLocaleTimeString();//
     const alertText = document.getElementById("alertText");
     if(magnitude>0.3){
       alertText.innerHTML = "⚠️ EARTHQUAKE DETECTED!";
